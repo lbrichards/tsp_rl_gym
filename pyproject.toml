@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "tsp-rl-gym"
+version = "0.1.0"
+description = "A Gymnasium environment for the Traveling Salesperson Problem (TSP) using Reinforcement Learning."
+authors = ["Larry Richards"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "tsp_rl_gym"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+gymnasium = "^0.29.0"
+numpy = "^1.26.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+ruff = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
