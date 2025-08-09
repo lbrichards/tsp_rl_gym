@@ -60,22 +60,25 @@ def test_step_logic_and_reward(env):
 def test_patience_termination(scorer):
     """Tests that the episode terminates when patience runs out."""
     # Use a tiny patience to force termination
-    env = OperatorEnv(scorer=scorer, max_steps=50, patience=2)
+    env = OperatorEnv(scorer=scorer, max_span=5, max_steps=50, patience=2)
     env.reset()
 
-    # Find an action that makes the tour worse (negative reward) to decrement patience
-    action = 0
-    for i in range(100): # Limit search to avoid infinite loop
+    # Find two different actions that make the tour worse
+    bad_actions = []
+    for i in range(len(env.action_pairs)):
         # Apply a 2-opt swap
         new_tour = env._apply_operator(env.tour, *env.action_pairs[i])
         if env.scorer.length(new_tour) > env.scorer.length(env.tour):
-            action = i
-            break
+            bad_actions.append(i)
+            if len(bad_actions) >= 2:
+                break
+    
+    assert len(bad_actions) >= 2, "Could not find enough bad actions for test"
     
     # Two bad steps should trigger termination
-    _, _, terminated, _, _ = env.step(action)
+    _, _, terminated, _, _ = env.step(bad_actions[0])
     assert not terminated
-    _, _, terminated, _, _ = env.step(action)
+    _, _, terminated, _, _ = env.step(bad_actions[1])
     assert terminated
 
 def test_gymnasium_compatibility(env):

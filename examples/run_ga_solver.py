@@ -5,52 +5,68 @@ from tsp_rl_gym.utils.data_loader import load_tsplib_instance
 from tsp_rl_gym.envs.core_scorer import CoreScorer
 from tsp_rl_gym.solvers.ga_solver import GASolver
 from tsp_rl_gym.utils.visualizer import plot_tour, plot_convergence
+from tsp_rl_gym.utils.logging import create_experiment_directory
 
 def main():
     """
-    Main function to run the GA solver and produce visualizations.
+    Main function to run the GA solver and produce structured, logged outputs.
     """
-    # 1. Load the TSP instance
-    print("Loading TSP instance...")
-    file_path = Path(__file__).parent.parent / "tsp_rl_gym" / "data" / "tsplib" / "ulysses16.tsp"
+    # --- Configuration ---
+    instance_name = "ulysses16"
+    population_size = 100
+    n_generations = 150
+    tournament_size = 5
+    mutation_rate = 0.1
+    seed = 42
+
+    # 1. Create a unique, timestamped directory for this experiment run
+    log_dir = Path(create_experiment_directory("GA", instance_name, seed))
+    
+    # Save config for reference
+    import json
+    config = {
+        "instance_name": instance_name,
+        "population_size": population_size,
+        "n_generations": n_generations,
+        "tournament_size": tournament_size,
+        "mutation_rate": mutation_rate,
+        "seed": seed
+    }
+    with open(log_dir / "config.json", 'w') as f:
+        json.dump(config, f, indent=4)
+
+    # 2. Load the TSP instance
+    print(f"Loading TSP instance: {instance_name}...")
+    file_path = Path(__file__).parent.parent / "tsp_rl_gym" / "data" / "tsplib" / f"{instance_name}.tsp"
     instance = load_tsplib_instance(str(file_path))
     coords = instance["coords"]
-    instance_name = instance.get("name", "tsp_instance")
     
-    # 2. Initialize the Scorer
-    print("Initializing scorer...")
+    # 3. Initialize the Scorer
     scorer = CoreScorer(coords=coords)
 
-    # 3. Initialize and run the GA Solver
+    # 4. Initialize and run the GA Solver
     solver = GASolver(
         scorer=scorer,
-        population_size=100,
-        n_generations=150,
-        tournament_size=5,
-        mutation_rate=0.1,
-        seed=42
+        population_size=population_size,
+        n_generations=n_generations,
+        tournament_size=tournament_size,
+        mutation_rate=mutation_rate,
+        seed=seed
     )
     solver.run()
 
-    # 4. Create visualizations
+    # 5. Create visualizations
     print("Generating visualizations...")
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
-
-    # Plot the initial vs. best tour
-    initial_tour_len = scorer.length(scorer.tour0)
     plot_tour(ax1, coords, solver.best_tour, title=f"Best Tour ({instance_name}) - Length: {solver.best_fitness:.2f}")
-    
-    # Plot the convergence history
     plot_convergence(ax2, solver.history, title="GA Convergence")
-
     fig.tight_layout()
     
-    # 5. Save the output
-    output_filename = f"outputs/{instance_name}_ga_solution.png"
+    # 6. Save the output plot to the unique log directory
+    output_filename = log_dir / "ga_solution.png"
     plt.savefig(output_filename)
     print(f"Solution plot saved to {output_filename}")
-    plt.show()
-
+    # plt.show() # Comment out to prevent blocking in automated runs
 
 if __name__ == "__main__":
     main()

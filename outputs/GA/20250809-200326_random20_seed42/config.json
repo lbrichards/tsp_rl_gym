@@ -1,0 +1,9 @@
+{
+    "n_cities": 20,
+    "seed": 42,
+    "generations": 500,
+    "population_size": 100,
+    "tournament_size": 5,
+    "mutation_rate": 0.1,
+    "instance_type": "random"
+}

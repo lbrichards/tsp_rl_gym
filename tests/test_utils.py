@@ -1,5 +1,8 @@
 import numpy as np
 import pytest
+import os
+import shutil
+from datetime import datetime
 
 # We will create these functions in the next step.
 from tsp_rl_gym.utils.tsp_ops import (
@@ -130,3 +133,48 @@ def test_canonicalize_tour():
     tour_2 = np.array([0, 2, 4, 1, 3])
     canonical_tour_2 = canonicalize_tour(tour_2)
     np.testing.assert_array_equal(canonical_tour_2, tour_2)
+
+
+def test_create_experiment_directory():
+    """
+    Tests that the logging utility function creates a directory with the
+    correct canonical format: outputs/{arm}/{timestamp}-{instance}-{seed}
+    """
+    try:
+        # This import will fail
+        from tsp_rl_gym.utils.logging import create_experiment_directory
+    except ImportError:
+        pytest.fail("Could not import 'create_experiment_directory' from tsp_rl_gym.utils.logging")
+
+    # Define test parameters
+    arm = "TestArm"
+    instance = "test25"
+    seed = 99
+    base_output_dir = "outputs"
+
+    # Cleanup before test
+    if os.path.exists(base_output_dir):
+        shutil.rmtree(base_output_dir)
+
+    # Execute the function
+    exp_path = create_experiment_directory(arm, instance, seed)
+
+    # Assertions
+    assert os.path.isdir(exp_path)
+    path_parts = exp_path.split(os.sep)
+    assert path_parts[-3] == "outputs"
+    assert path_parts[-2] == arm
+
+    # Check the final directory name format
+    dir_name = path_parts[-1]
+    timestamp_str, inst_str, seed_str = dir_name.split('_')
+    assert inst_str == instance
+    assert seed_str == f"seed{seed}"
+    try:
+        # Check if the timestamp is in the expected format YYYYMMDD-HHMMSS
+        datetime.strptime(timestamp_str, '%Y%m%d-%H%M%S')
+    except ValueError:
+        pytest.fail("Timestamp in directory name is not in YYYYMMDD-HHMMSS format.")
+
+    # Cleanup after test
+    shutil.rmtree(base_output_dir)
