@@ -86,3 +86,41 @@ def test_gymnasium_compatibility(env):
     Uses the official Gymnasium checker to validate the environment's API.
     """
     check_env(env, skip_render_check=True)
+
+def test_potential_based_reward_shaping(env):
+    """
+    Tests that the environment uses potential-based reward shaping.
+    The reward should be F(s') - F(s) - step_penalty,
+    where F(s) = -tour_length.
+    """
+    # Reset the environment
+    obs, info = env.reset()
+    initial_length = env.scorer.length(env.tour)
+
+    # Find any valid action
+    action_mask = env._get_action_mask()
+    valid_action_index = -1
+    for i, is_valid in enumerate(action_mask):
+        if is_valid:
+            valid_action_index = i
+            break
+    
+    assert valid_action_index != -1, "Could not find a valid action to test."
+
+    # Take the action
+    new_obs, reward, terminated, truncated, new_info = env.step(valid_action_index)
+    new_length = env.scorer.length(env.tour)
+
+    # Define the potential function
+    phi_initial = -initial_length
+    phi_new = -new_length
+    
+    # Assume a step penalty exists in the environment's config
+    step_penalty = env.step_penalty  # This will fail if the attribute doesn't exist
+
+    expected_reward = phi_new - phi_initial - step_penalty
+    
+    # This is the assertion that will fail
+    assert np.isclose(reward, expected_reward, rtol=1e-5), \
+        f"RED STATE CONFIRMED: Reward does not match potential-based shaping formula. " \
+        f"Got {reward}, expected {expected_reward}"
