@@ -110,8 +110,15 @@ def run_ga_solver(instance, seed, generations, population_size=100, output_dir=N
         plot_tour(ax1, coords, solver.best_tour, 
                   title=f"Best Tour - Length: {solver.best_fitness:.4f}")
         
-        # Plot convergence
-        plot_convergence(ax2, solver.history, title="GA Convergence")
+        # Plot convergence - show both best and average
+        ax2.plot(solver.history, 'b-', label='Best Fitness', linewidth=2)
+        if hasattr(solver, 'avg_history'):
+            ax2.plot(solver.avg_history, 'r--', label='Average Fitness', alpha=0.7)
+        ax2.set_title("GA Convergence")
+        ax2.set_xlabel("Generation")
+        ax2.set_ylabel("Tour Length")
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
         
         fig.suptitle(f"GA Results - {n_cities} Cities, Seed {seed}", fontsize=16)
         fig.tight_layout()

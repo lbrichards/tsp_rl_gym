@@ -30,9 +30,12 @@ class GASolver:
         
         self.best_tour = None
         self.best_fitness = float('inf')
-        self.history = []
+        self.history = []  # Best fitness at each generation
+        self.avg_history = []  # Average fitness at each generation
         
         self._update_best()
+        # Also track initial average
+        self.avg_history.append(self.initial_avg_fitness)
 
     def _initialize_population(self) -> np.ndarray:
         """Creates the initial population of random tours."""
@@ -94,5 +97,7 @@ class GASolver:
             self.population = next_population
             self.fitnesses = self._calculate_fitnesses()
             self._update_best()
+            # Track average fitness too
+            self.avg_history.append(np.mean(self.fitnesses))
         
         print(f"GA finished. Best tour length: {self.best_fitness:.2f}")
