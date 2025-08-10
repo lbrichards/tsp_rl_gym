@@ -24,6 +24,10 @@ class GASolver:
         self.population = self._initialize_population()
         self.fitnesses = self._calculate_fitnesses()
         
+        # Track initial population statistics
+        self.initial_avg_fitness = np.mean(self.fitnesses)
+        self.initial_best_fitness = np.min(self.fitnesses)
+        
         self.best_tour = None
         self.best_fitness = float('inf')
         self.history = []
