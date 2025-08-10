@@ -12,11 +12,18 @@ from tsp_rl_gym.utils.tsp_ops import apply_2_opt_swap, build_action_pairs, canon
 class OperatorEnv(gym.Env):
     """
     A Gymnasium environment for TSP that allows 2-opt operations.
-    Includes a guard against immediate action reversal to prevent oscillation.
+    
+    Features:
+    - Guard against immediate action reversal to prevent oscillation
+    - Potential-Based Reward Shaping (PBRS) for stable RL training
+    - Step penalty to encourage efficient solutions
+    
+    Reward formula: r = F(s') - F(s) - step_penalty
+    where F(s) = -tour_length (potential function)
     """
     metadata = {"render_modes": []}
 
-    def __init__(self, scorer: CoreScorer, max_span: int, max_steps: int, patience: int):
+    def __init__(self, scorer: CoreScorer, max_span: int, max_steps: int, patience: int, step_penalty: float = 1e-4):
         super().__init__()
         self.scorer = scorer
         self.coords = scorer.coords
@@ -26,6 +33,7 @@ class OperatorEnv(gym.Env):
         self.max_span = min(max_span, self.num_cities - 1)
         self.max_steps = max_steps
         self.patience_limit = patience
+        self.step_penalty = step_penalty  # Penalty per step to encourage efficiency
 
         # Pre-compute valid actions (2-opt swaps)
         self.action_pairs = build_action_pairs(self.num_cities, self.max_span)
@@ -93,17 +101,23 @@ class OperatorEnv(gym.Env):
         if not mask[action]:
             raise ValueError(f"Action {action} is not valid (masked)")
         
+        # Store initial tour length for reward calculation
+        initial_length = self.L_current
+        
         # Apply the 2-opt swap
         i, j = self.action_pairs[action]
         new_tour = self._apply_operator(self.tour, i, j)
-        L_new = self.scorer.length(new_tour)
+        new_length = self.scorer.length(new_tour)
         
-        # Calculate reward (normalized improvement)
-        reward = (self.L_current - L_new) / self.scorer.L0
+        # Calculate potential-based reward: F(s') - F(s) - step_penalty
+        # where F(s) = -tour_length (negative because we minimize)
+        phi_initial = -initial_length
+        phi_new = -new_length
+        reward = phi_new - phi_initial - self.step_penalty
         
         # Update state
         self.tour = new_tour
-        self.L_current = L_new
+        self.L_current = new_length
         self.last_action_index = action  # Store the action for reversal guard
         
         # Update best and patience

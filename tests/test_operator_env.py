@@ -48,8 +48,10 @@ def test_step_logic_and_reward(env):
 
     L_new = new_info["L"]
 
-    # Reward should equal the normalized change in length from the CoreScorer
-    expected_reward = (L_initial - L_new) / env.scorer.L0
+    # Reward should follow PBRS formula: F(s') - F(s) - step_penalty
+    phi_initial = -L_initial
+    phi_new = -L_new
+    expected_reward = phi_new - phi_initial - env.step_penalty
     assert np.isclose(reward, expected_reward)
     
     # New observation must be valid
